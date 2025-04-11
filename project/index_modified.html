@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>The page name</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f7f7f7;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #eb5600;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      position: relative;
+    }
+    #backButton {
+      position: absolute;
+      left: 20px;
+      top: 20px;
+      background-color: white;
+      color: #eb5600;
+      border: 2px solid #eb5600;
+      padding: 5px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: none;
+    }
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+    .product {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 15px;
+      text-align: center;
+    }
+    .product img {
+      max-width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+    .product h3 {
+      margin: 10px 0;
+    }
+    .product button {
+      padding: 10px 15px;
+      background-color: #eb5600;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    form {
+      background: white;
+      max-width: 400px;
+      margin: 30px auto;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      display: none;
+    }
+    form input, form textarea {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+    form button {
+      background-color: #eb5600;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button id="backButton" onclick="hideForm()">Back</button>
+    The page name
+  </header>
+
+  <div class="products">
+    <div class="product">
+      <img src="cover13s.jpg" alt="Case 1"/>
+      <h3>iPhone 13 Silicon</h3>
+      <button onclick="showForm('iPhone 13 Silicon')">Order Now</button>
+    </div>
+
+    <div class="product">
+      <img src="cover.jpg.jpg" alt="iPhone 13 MagSafe"/>
+      <h3>iPhone 13 MagSafe</h3>
+      <button onclick="showForm('iPhone 13 MagSafe')">Order Now</button>
+    </div>
+  </div>
+
+  <form id="orderForm" action="https://formsubmit.co/omarzxy4@gmail.com" method="POST">
+    <input type="hidden" name="Case" id="productType"/>
+    <label>Name:</label>
+    <input type="text" name="Name" required/>
+    <label>Phone Number:</label>
+    <input type="text" name="Phone Number" required/>
+    <label>Location / Address:</label>
+    <textarea name="Address" required></textarea>
+    <button type="submit">Submit Order</button>
+  </form>
+
+  <script>
+    function showForm(productName) {
+      document.getElementById('productType').value = productName;
+      document.getElementById('orderForm').style.display = 'block';
+      document.getElementById('backButton').style.display = 'inline-block';
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function hideForm() {
+      const form = document.getElementById('orderForm');
+      form.style.display = 'none';
+      form.reset(); // clear inputs
+      document.getElementById('backButton').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
