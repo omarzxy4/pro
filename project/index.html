@@ -29,9 +29,13 @@
       border-radius: 10px;
       cursor: pointer;
     }
-    #backButton { left: 20px; display: none; }
-    #adminButton { right: 20px; display: inline-block; }
-
+    #backButton {
+      left: 20px;
+      display: none;
+    }
+    #adminButton {
+      right: 20px;
+    }
     .products {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -62,7 +66,7 @@
       border-radius: 10px;
       cursor: pointer;
     }
-    form, #adminPanel, #adminLogin {
+    form, #adminControls, #editForm {
       background: white;
       max-width: 400px;
       margin: 30px auto;
@@ -71,14 +75,14 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       display: none;
     }
-    form input, form textarea, #adminLogin input {
+    form input, form textarea, #editForm input, #editForm textarea {
       width: 100%;
       margin: 10px 0;
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 10px;
     }
-    form button, #adminLogin button, #adminPanel button {
+    form button, #editForm button, #adminControls button {
       background-color: #eb5600;
       color: white;
       padding: 10px;
@@ -86,6 +90,15 @@
       border-radius: 10px;
       cursor: pointer;
       margin: 5px 0;
+    }
+    #adminLogin {
+      text-align: center;
+      margin-top: 30px;
+    }
+    #adminLogin input {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
@@ -96,149 +109,154 @@
     The page name
   </header>
 
-  <div class="products" id="productList"></div>
+  <div class="products" id="productContainer">
+    <div class="product">
+      <img src="cover13s.jpg" alt="Case 1"/>
+      <h3>iPhone 13 Silicon</h3>
+      <button onclick="showForm('iPhone 13 Silicon')">Order Now</button>
+    </div>
+    <div class="product">
+      <img src="cover.jpg.jpg" alt="iPhone 13 MagSafe"/>
+      <h3>iPhone 13 MagSafe</h3>
+      <button onclick="showForm('iPhone 13 MagSafe')">Order Now</button>
+    </div>
+  </div>
 
   <form id="orderForm" action="https://formsubmit.co/c429f789cbf8e4bad80f9c95fb902969" method="POST">
     <input type="hidden" name="Case" id="productType"/>
     <label>Name:</label>
-    <input type="text" name="Name" required pattern="[A-Za-zأ-ي\s]+" oninput="this.value = this.value.replace(/[^A-Za-zأ-ي\s]/g, '')"/>
+    <input type="text" name="Name" required pattern="[A-Za-zأ-ي\s]+" title="الاسم يجب أن يحتوي على حروف فقط" oninput="this.value = this.value.replace(/[^A-Za-zأ-ي\s]/g, '')"/>
     <label>Phone Number:</label>
-    <input type="tel" name="Phone Number" required pattern="01[0-9]{9}" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')"/>
+    <input type="tel" name="Phone Number" required pattern="01[0-9]{9}" maxlength="11" title="رقم الهاتف يجب أن يبدأ بـ 01 ويتكون من 11 رقم" oninput="this.value = this.value.replace(/[^0-9]/g, '')"/>
     <label>Location / Address:</label>
     <textarea name="Address" required></textarea>
     <button type="submit">Submit Order</button>
   </form>
 
   <div id="adminLogin">
-    <label>Admin Code:</label>
-    <input type="password" id="adminCodeInput"/>
+    <h3>Admin code</h3>
+    <input type="password" id="adminCodeInput" placeholder="Enter admin code"/>
+    <br/><br/>
     <button onclick="checkAdminCode()">Enter</button>
+    <p id="adminMessage" style="color:red;"></p>
   </div>
 
-  <div id="adminPanel">
+  <div id="adminControls">
     <button onclick="showAddForm()">Add</button>
-    <button onclick="enableEdit()">Edit</button>
-    <button onclick="enableDelete()">Delete</button>
+    <button onclick="enableEditMode()">Edit</button>
+    <button onclick="enableDeleteMode()">Delete</button>
   </div>
 
-  <form id="adminForm">
-    <input type="text" id="newProductName" placeholder="Product Name" required />
-    <input type="file" id="newProductImage" accept="image/*" required />
-    <button type="submit">Save Product</button>
+  <form id="addProductForm">
+    <label>Product Name:</label>
+    <input type="text" id="newProductName"/>
+    <label>Product Image:</label>
+    <input type="file" id="newProductImage" accept="image/*"/>
+    <button type="button" onclick="addProduct()">Add Product</button>
+  </form>
+
+  <form id="editForm">
+    <label>Product Name:</label>
+    <input type="text" id="editProductName"/>
+    <label>Product Image:</label>
+    <input type="file" id="editProductImage" accept="image/*"/>
+    <button type="button" onclick="saveEdit()">Save Changes</button>
   </form>
 
   <script>
-    const products = JSON.parse(localStorage.getItem("products")) || [];
-    let adminMode = false;
-    let editMode = false;
+    let currentEditElement = null;
     let deleteMode = false;
-    let currentEditIndex = null;
+    let editMode = false;
 
-    const productList = document.getElementById("productList");
-    const orderForm = document.getElementById("orderForm");
-    const backButton = document.getElementById("backButton");
-    const adminLogin = document.getElementById("adminLogin");
-    const adminPanel = document.getElementById("adminPanel");
-    const adminForm = document.getElementById("adminForm");
-
-    function saveProducts() {
-      localStorage.setItem("products", JSON.stringify(products));
+    function showForm(productName) {
+      document.getElementById('productType').value = productName;
+      document.getElementById('orderForm').style.display = 'block';
+      document.getElementById('backButton').style.display = 'inline-block';
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function goBack() {
-      orderForm.style.display = 'none';
-      adminLogin.style.display = 'none';
-      adminPanel.style.display = 'none';
-      adminForm.style.display = 'none';
-      backButton.style.display = 'none';
-      editMode = deleteMode = false;
+      document.getElementById('orderForm').style.display = 'none';
+      document.getElementById('adminLogin').style.display = 'none';
+      document.getElementById('adminControls').style.display = 'none';
+      document.getElementById('addProductForm').style.display = 'none';
+      document.getElementById('editForm').style.display = 'none';
+      document.getElementById('backButton').style.display = 'none';
     }
 
     function showAdminLogin() {
-      adminLogin.style.display = 'block';
-      backButton.style.display = 'inline-block';
+      document.getElementById('adminLogin').style.display = 'block';
+      document.getElementById('backButton').style.display = 'inline-block';
     }
 
     function checkAdminCode() {
-      const input = document.getElementById("adminCodeInput").value;
-      if (input === "zxy") {
-        adminLogin.style.display = "none";
-        adminPanel.style.display = "block";
+      const code = document.getElementById('adminCodeInput').value;
+      const msg = document.getElementById('adminMessage');
+      if (code === 'zxy') {
+        msg.textContent = '';
+        document.getElementById('adminLogin').style.display = 'none';
+        document.getElementById('adminControls').style.display = 'block';
       } else {
-        alert("Invalid code");
+        msg.textContent = 'Invalid code';
       }
     }
 
     function showAddForm() {
-      adminForm.style.display = "block";
-      adminForm.onsubmit = function (e) {
-        e.preventDefault();
-        const name = document.getElementById("newProductName").value;
-        const imageFile = document.getElementById("newProductImage").files[0];
+      document.getElementById('addProductForm').style.display = 'block';
+      document.getElementById('editForm').style.display = 'none';
+      editMode = false;
+      deleteMode = false;
+    }
+
+    function addProduct() {
+      const name = document.getElementById('newProductName').value;
+      const imageInput = document.getElementById('newProductImage');
+      const file = imageInput.files[0];
+
+      if (name && file) {
         const reader = new FileReader();
-        reader.onload = function () {
-          const imageUrl = reader.result;
-          if (editMode && currentEditIndex !== null) {
-            products[currentEditIndex] = { name, image: imageUrl };
-            currentEditIndex = null;
-            editMode = false;
-          } else {
-            products.push({ name, image: imageUrl });
-          }
-          saveProducts();
-          adminForm.reset();
-          adminForm.style.display = "none";
-          displayProducts();
+        reader.onload = function(e) {
+          const container = document.getElementById('productContainer');
+          const product = document.createElement('div');
+          product.className = 'product';
+          product.innerHTML = `
+            <img src="${e.target.result}" style="max-width: 100%; height: 250px; object-fit: cover; border-radius: 10px;"/>
+            <h3>${name}</h3>
+            <button onclick="showForm('${name}')">Order Now</button>
+          `;
+          product.onclick = () => handleProductClick(product);
+          container.appendChild(product);
         };
-        if (imageFile) reader.readAsDataURL(imageFile);
-      };
+        reader.readAsDataURL(file);
+        document.getElementById('addProductForm').reset();
+        document.getElementById('addProductForm').style.display = 'none';
+      }
     }
 
-    function enableEdit() {
+    function enableEditMode() {
       editMode = true;
-      alert("Click on a product to edit");
+      deleteMode = false;
+      document.getElementById('editForm').style.display = 'block';
+      document.getElementById('addProductForm').style.display = 'none';
     }
 
-    function enableDelete() {
+    function enableDeleteMode() {
       deleteMode = true;
-      alert("Click on a product to delete");
+      editMode = false;
+      document.getElementById('editForm').style.display = 'none';
+      document.getElementById('addProductForm').style.display = 'none';
     }
 
-    function displayProducts() {
-      productList.innerHTML = "";
-      products.forEach((product, index) => {
-        const div = document.createElement("div");
-        div.className = "product";
-        div.innerHTML = `
-          <img src="${product.image}" />
-          <h3>${product.name}</h3>
-          <button onclick="orderProduct('${product.name}')">Order Now</button>
-        `;
-        div.onclick = function () {
-          if (editMode) {
-            document.getElementById("newProductName").value = product.name;
-            currentEditIndex = index;
-            showAddForm();
-          } else if (deleteMode) {
-            if (confirm("Delete this product?")) {
-              products.splice(index, 1);
-              saveProducts();
-              displayProducts();
-            }
-          }
-        };
-        productList.appendChild(div);
-      });
+    function handleProductClick(element) {
+      if (deleteMode) {
+        element.remove();
+      } else if (editMode) {
+        currentEditElement = element;
+        document.getElementById('editProductName').value = element.querySelector('h3').textContent;
+        document.getElementById('editForm').style.display = 'block';
+      }
     }
 
-    function orderProduct(name) {
-      document.getElementById('productType').value = name;
-      orderForm.style.display = 'block';
-      backButton.style.display = 'inline-block';
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    }
-
-    displayProducts();
-  </script>
-</body>
-</html>
+    function saveEdit() {
+      const newName = document.getElementById('editProductName').value;
+      const newImage = document.getElementById('
