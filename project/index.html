@@ -19,8 +19,7 @@
       font-size: 24px;
       position: relative;
     }
-    #backButton,
-    #adminButton {
+    #backButton, #adminButton {
       position: absolute;
       background-color: white;
       color: #eb5600;
@@ -37,7 +36,6 @@
     #adminButton {
       right: 20px;
       top: 20px;
-      display: inline-block;
     }
     .products {
       display: grid;
@@ -69,7 +67,7 @@
       border-radius: 10px;
       cursor: pointer;
     }
-    form, #adminForm {
+    form, #adminForm, #addProductForm {
       background: white;
       max-width: 400px;
       margin: 30px auto;
@@ -78,14 +76,16 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       display: none;
     }
-    form input, form textarea, #adminForm input {
+    form input, form textarea,
+    #adminForm input,
+    #addProductForm input {
       width: 100%;
       margin: 10px 0;
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 10px;
     }
-    form button, #adminForm button {
+    form button, #adminForm button, #addProductForm button {
       background-color: #eb5600;
       color: white;
       padding: 10px;
@@ -108,7 +108,7 @@
     The page name
   </header>
 
-  <div class="products">
+  <div class="products" id="productContainer">
     <div class="product">
       <img src="cover13s.jpg" alt="Case 1"/>
       <h3>iPhone 13 Silicon</h3>
@@ -140,7 +140,7 @@
     <button type="submit">Submit Order</button>
   </form>
 
-  <!-- Admin code form -->
+  <!-- Admin login form -->
   <div id="adminForm">
     <label><strong>Admin code</strong></label>
     <input type="password" id="adminCodeInput" placeholder="Enter admin code">
@@ -148,36 +148,43 @@
     <div id="adminError"></div>
   </div>
 
+  <!-- Admin Add Product Form -->
+  <form id="addProductForm" onsubmit="addProduct(event)">
+    <label>Product Name:</label>
+    <input type="text" id="newProductName" required>
+
+    <label>Product Image:</label>
+    <input type="file" id="newProductImage" accept="image/*" required>
+
+    <button type="submit">Add Product</button>
+  </form>
+
   <script>
+    const backButton = document.getElementById('backButton');
+
     function showForm(productName) {
       document.getElementById('productType').value = productName;
       document.getElementById('orderForm').style.display = 'block';
       document.getElementById('adminForm').style.display = 'none';
-      document.getElementById('backButton').style.display = 'inline-block';
+      document.getElementById('addProductForm').style.display = 'none';
+      backButton.style.display = 'inline-block';
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function hideForm() {
-      const orderForm = document.getElementById('orderForm');
-      const adminForm = document.getElementById('adminForm');
-      const backButton = document.getElementById('backButton');
-
-      orderForm.style.display = 'none';
-      orderForm.reset();
-
-      adminForm.style.display = 'none';
+      document.getElementById('orderForm').style.display = 'none';
+      document.getElementById('adminForm').style.display = 'none';
+      document.getElementById('addProductForm').style.display = 'none';
+      document.getElementById('orderForm').reset();
       document.getElementById('adminCodeInput').value = '';
       document.getElementById('adminError').textContent = '';
-
       backButton.style.display = 'none';
     }
 
     function toggleAdminForm() {
       const adminForm = document.getElementById('adminForm');
-      const orderForm = document.getElementById('orderForm');
-      const backButton = document.getElementById('backButton');
-
-      orderForm.style.display = 'none';
+      document.getElementById('orderForm').style.display = 'none';
+      document.getElementById('addProductForm').style.display = 'none';
 
       if (adminForm.style.display === 'block') {
         adminForm.style.display = 'none';
@@ -192,13 +199,59 @@
     function checkAdminCode() {
       const code = document.getElementById('adminCodeInput').value;
       const errorDiv = document.getElementById('adminError');
-
       if (code === 'zxy') {
-        window.location.href = 'dashboard.html'; // ← غيّرها للصفحة اللي تحب
+        document.getElementById('adminForm').style.display = 'none';
+        document.getElementById('addProductForm').style.display = 'block';
+        errorDiv.textContent = '';
+        document.getElementById('adminCodeInput').value = '';
       } else {
         errorDiv.textContent = 'Invalid code';
       }
     }
+
+    function addProduct(e) {
+      e.preventDefault();
+      const name = document.getElementById('newProductName').value;
+      const imageFile = document.getElementById('newProductImage').files[0];
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const product = {
+          name: name,
+          image: event.target.result
+        };
+        saveProductToLocal(product);
+        renderProduct(product);
+        document.getElementById('addProductForm').reset();
+      };
+      reader.readAsDataURL(imageFile);
+    }
+
+    function renderProduct(product) {
+      const container = document.getElementById('productContainer');
+      const div = document.createElement('div');
+      div.className = 'product';
+      div.innerHTML = `
+        <img src="${product.image}" alt="${product.name}"/>
+        <h3>${product.name}</h3>
+        <button onclick="showForm('${product.name}')">Order Now</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function saveProductToLocal(product) {
+      let products = JSON.parse(localStorage.getItem('addedProducts')) || [];
+      products.push(product);
+      localStorage.setItem('addedProducts', JSON.stringify(products));
+    }
+
+    function loadSavedProducts() {
+      const products = JSON.parse(localStorage.getItem('addedProducts')) || [];
+      products.forEach(renderProduct);
+    }
+
+    // Load products on page load
+    window.onload = loadSavedProducts;
   </script>
 </body>
 </html>
