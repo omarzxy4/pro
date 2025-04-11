@@ -49,9 +49,10 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       padding: 15px;
       text-align: center;
+      cursor: pointer;
     }
     .product img {
-      max-width: 100%;
+      width: 100%;
       height: 250px;
       object-fit: cover;
       border-radius: 10px;
@@ -157,10 +158,12 @@
     <input type="file" id="newProductImage" accept="image/*" required>
 
     <button type="submit">Add Product</button>
+    <button type="button" onclick="activateDeleteMode()" style="margin-left: 10px;">Delete Product</button>
   </form>
 
   <script>
     const backButton = document.getElementById('backButton');
+    let deleteMode = false;
 
     function showForm(productName) {
       document.getElementById('productType').value = productName;
@@ -179,6 +182,7 @@
       document.getElementById('adminCodeInput').value = '';
       document.getElementById('adminError').textContent = '';
       backButton.style.display = 'none';
+      deleteMode = false;
     }
 
     function toggleAdminForm() {
@@ -222,9 +226,9 @@
         };
         saveProductToLocal(product);
         renderProduct(product);
-        document.getElementById('addProductForm').reset();
       };
       reader.readAsDataURL(imageFile);
+      document.getElementById('addProductForm').reset();
     }
 
     function renderProduct(product) {
@@ -237,6 +241,7 @@
         <button onclick="showForm('${product.name}')">Order Now</button>
       `;
       container.appendChild(div);
+      attachDeleteListener(div, product.name);
     }
 
     function saveProductToLocal(product) {
@@ -247,11 +252,40 @@
 
     function loadSavedProducts() {
       const products = JSON.parse(localStorage.getItem('addedProducts')) || [];
-      products.forEach(renderProduct);
+      products.forEach(product => renderProduct(product));
     }
 
-    // Load products on page load
-    window.onload = loadSavedProducts;
+    function activateDeleteMode() {
+      deleteMode = true;
+      alert("Click any product to delete it.\nPress 'Back' to exit delete mode.");
+    }
+
+    function attachDeleteListener(productDiv, productName) {
+      productDiv.addEventListener('click', function () {
+        if (deleteMode) {
+          if (confirm(`Delete "${productName}"?`)) {
+            productDiv.remove();
+            let products = JSON.parse(localStorage.getItem('addedProducts')) || [];
+            products = products.filter(p => p.name !== productName);
+            localStorage.setItem('addedProducts', JSON.stringify(products));
+          }
+        }
+      });
+    }
+
+    function enableDeleteOnAll() {
+      const productDivs = document.querySelectorAll('.product');
+      productDivs.forEach(div => {
+        const name = div.querySelector('h3')?.innerText || '';
+        attachDeleteListener(div, name);
+      });
+    }
+
+    window.onload = function() {
+      loadSavedProducts();
+      enableDeleteOnAll();
+    };
   </script>
 </body>
 </html>
+
