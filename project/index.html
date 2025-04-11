@@ -45,6 +45,7 @@
       padding: 15px;
       text-align: center;
       position: relative;
+      transition: transform 0.3s;
     }
     .product img {
       max-width: 100%;
@@ -57,7 +58,7 @@
     }
     .product button {
       padding: 8px 12px;
-      margin: 5px;
+      margin-top: 5px;
       background-color: #eb5600;
       color: white;
       border: none;
@@ -65,7 +66,7 @@
       cursor: pointer;
     }
 
-    form {
+    form, #adminTools, #adminSection {
       background: white;
       max-width: 400px;
       margin: 30px auto;
@@ -73,24 +74,33 @@
       border-radius: 15px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       display: none;
+      text-align: center;
     }
-    form input, form textarea {
+
+    form input {
       width: 100%;
       margin: 10px 0;
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 10px;
     }
-    form button {
+
+    form button, #adminTools button {
       background-color: #eb5600;
       color: white;
       padding: 10px;
       border: none;
       border-radius: 10px;
       cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
     }
 
-    #adminSection { text-align: center; margin-top: 30px; display: none; }
+    .selectable {
+      outline: 3px solid #eb5600;
+      cursor: pointer;
+      transform: scale(1.03);
+    }
   </style>
 </head>
 <body>
@@ -100,18 +110,7 @@
     The page name
   </header>
 
-  <div class="products" id="productsContainer">
-    <div class="product">
-      <img src="cover13s.jpg" alt="Case 1"/>
-      <h3>iPhone 13 Silicon</h3>
-      <button onclick="showOrderForm('iPhone 13 Silicon')">Order Now</button>
-    </div>
-    <div class="product">
-      <img src="cover.jpg.jpg" alt="Case 2"/>
-      <h3>iPhone 13 MagSafe</h3>
-      <button onclick="showOrderForm('iPhone 13 MagSafe')">Order Now</button>
-    </div>
-  </div>
+  <div class="products" id="productsContainer"></div>
 
   <!-- Order Form -->
   <form id="orderForm" action="https://formsubmit.co/c429f789cbf8e4bad80f9c95fb902969" method="POST">
@@ -131,7 +130,7 @@
     <button type="submit">Submit Order</button>
   </form>
 
-  <!-- Admin Code Section -->
+  <!-- Admin Code Form -->
   <div id="adminSection">
     <h3>Admin code</h3>
     <input type="password" id="adminCodeInput" placeholder="Enter admin code"/>
@@ -139,7 +138,14 @@
     <p id="adminError" style="color: red;"></p>
   </div>
 
-  <!-- Admin Add Form -->
+  <!-- Admin Tools -->
+  <div id="adminTools">
+    <button onclick="showAddForm()">Add Product</button>
+    <button onclick="enterEditMode()">Edit Product</button>
+    <button onclick="enterDeleteMode()">Delete Product</button>
+  </div>
+
+  <!-- Add Product Form -->
   <form id="addForm">
     <label>Product Name:</label>
     <input type="text" id="newProductName" required />
@@ -147,26 +153,22 @@
     <label>Image URL:</label>
     <input type="url" id="newProductImage" required />
 
-    <button type="submit">Add Product</button>
+    <button type="submit">Add</button>
   </form>
 
   <script>
     let isAdmin = false;
+    let currentMode = null;
 
-    function showOrderForm(name) {
-      document.getElementById("productType").value = name;
-      document.getElementById("orderForm").style.display = "block";
-      document.getElementById("backButton").style.display = "inline-block";
-      hideAllExcept("orderForm");
-    }
+    const productsContainer = document.getElementById("productsContainer");
 
     function goBack() {
-      hideAllForms();
+      hideAll();
       document.getElementById("backButton").style.display = "none";
     }
 
     function showAdminCode() {
-      hideAllExcept("adminSection");
+      hideAll();
       document.getElementById("adminSection").style.display = "block";
       document.getElementById("backButton").style.display = "inline-block";
     }
@@ -178,22 +180,61 @@
         isAdmin = true;
         error.textContent = "";
         document.getElementById("adminSection").style.display = "none";
-        document.getElementById("addForm").style.display = "block";
+        document.getElementById("adminTools").style.display = "block";
       } else {
         error.textContent = "Invalid code";
       }
     }
 
-    function hideAllForms() {
-      document.getElementById("orderForm").style.display = "none";
-      document.getElementById("addForm").style.display = "none";
-      document.getElementById("adminSection").style.display = "none";
+    function showAddForm() {
+      hideAll();
+      document.getElementById("addForm").style.display = "block";
     }
 
-    function hideAllExcept(id) {
-      ["orderForm", "addForm", "adminSection"].forEach(i => {
-        if (i !== id) document.getElementById(i).style.display = "none";
+    function enterEditMode() {
+      currentMode = "edit";
+      markSelectable();
+    }
+
+    function enterDeleteMode() {
+      currentMode = "delete";
+      markSelectable();
+    }
+
+    function markSelectable() {
+      hideAll();
+      const cards = document.querySelectorAll(".product");
+      cards.forEach((card, i) => {
+        card.classList.add("selectable");
+        card.onclick = () => handleProductAction(i);
       });
+    }
+
+    function handleProductAction(index) {
+      const products = JSON.parse(localStorage.getItem("addedProducts") || "[]");
+      if (currentMode === "edit") {
+        const newName = prompt("Enter new name:", products[index].name);
+        const newImage = prompt("Enter new image URL:", products[index].image);
+        if (newName && newImage) {
+          products[index].name = newName;
+          products[index].image = newImage;
+          localStorage.setItem("addedProducts", JSON.stringify(products));
+        }
+      } else if (currentMode === "delete") {
+        if (confirm("Are you sure you want to delete this product?")) {
+          products.splice(index, 1);
+          localStorage.setItem("addedProducts", JSON.stringify(products));
+        }
+      }
+      currentMode = null;
+      location.reload();
+    }
+
+    function showOrderForm(name) {
+      document.getElementById("productType").value = name;
+      hideAll();
+      document.getElementById("orderForm").style.display = "block";
+      document.getElementById("backButton").style.display = "inline-block";
     }
 
     function renderProduct(name, imageURL, index) {
@@ -203,21 +244,15 @@
         <img src="${imageURL}" alt="${name}" />
         <h3>${name}</h3>
         <button onclick="showOrderForm('${name}')">Order Now</button>
-        ${isAdmin ? `
-          <button onclick="editProduct(${index})">Edit</button>
-          <button onclick="deleteProduct(${index})">Delete</button>
-        ` : ""}
       `;
       return productDiv;
     }
 
-    const productsContainer = document.getElementById("productsContainer");
-
     function loadProducts() {
       const products = JSON.parse(localStorage.getItem("addedProducts") || "[]");
       products.forEach((prod, i) => {
-        const productElement = renderProduct(prod.name, prod.image, i);
-        productsContainer.appendChild(productElement);
+        const el = renderProduct(prod.name, prod.image, i);
+        productsContainer.appendChild(el);
       });
     }
 
@@ -231,28 +266,18 @@
       location.reload();
     });
 
-    function editProduct(index) {
-      const products = JSON.parse(localStorage.getItem("addedProducts") || "[]");
-      const newName = prompt("Enter new name:", products[index].name);
-      const newImage = prompt("Enter new image URL:", products[index].image);
-      if (newName && newImage) {
-        products[index].name = newName;
-        products[index].image = newImage;
-        localStorage.setItem("addedProducts", JSON.stringify(products));
-        location.reload();
-      }
+    function hideAll() {
+      document.getElementById("orderForm").style.display = "none";
+      document.getElementById("addForm").style.display = "none";
+      document.getElementById("adminSection").style.display = "none";
+      document.getElementById("adminTools").style.display = "none";
+
+      document.querySelectorAll(".product").forEach(card => {
+        card.classList.remove("selectable");
+        card.onclick = null;
+      });
     }
 
-    function deleteProduct(index) {
-      if (confirm("Are you sure you want to delete this product?")) {
-        const products = JSON.parse(localStorage.getItem("addedProducts") || "[]");
-        products.splice(index, 1);
-        localStorage.setItem("addedProducts", JSON.stringify(products));
-        location.reload();
-      }
-    }
-
-    // Load stored products on page load
     loadProducts();
   </script>
 </body>
