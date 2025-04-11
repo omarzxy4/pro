@@ -109,12 +109,16 @@
 
   <form id="orderForm" action="https://formsubmit.co/omarzxy4@gmail.com" method="POST">
     <input type="hidden" name="Case" id="productType"/>
+    
     <label>Name:</label>
-    <input type="text" name="Name" required/>
+    <input type="text" name="Name" required pattern="[A-Za-zأ-ي\s]+" title="الاسم يجب أن يحتوي على حروف فقط"/>
+    
     <label>Phone Number:</label>
-    <input type="text" name="Phone Number" required/>
+    <input type="tel" name="Phone Number" required pattern="01[0-9]{9}" maxlength="11" title="رقم الهاتف يجب أن يبدأ بـ 01 ويتكون من 11 رقم"/>
+    
     <label>Location / Address:</label>
     <textarea name="Address" required></textarea>
+    
     <button type="submit">Submit Order</button>
   </form>
 
