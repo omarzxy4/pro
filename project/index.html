@@ -19,17 +19,25 @@
       font-size: 24px;
       position: relative;
     }
-    #backButton {
+    #backButton,
+    #adminButton {
       position: absolute;
-      left: 20px;
-      top: 20px;
       background-color: white;
       color: #eb5600;
       border: 2px solid #eb5600;
       padding: 5px 10px;
       border-radius: 10px;
       cursor: pointer;
+    }
+    #backButton {
+      left: 20px;
+      top: 20px;
       display: none;
+    }
+    #adminButton {
+      right: 20px;
+      top: 20px;
+      display: inline-block;
     }
     .products {
       display: grid;
@@ -61,7 +69,7 @@
       border-radius: 10px;
       cursor: pointer;
     }
-    form {
+    form, #adminForm {
       background: white;
       max-width: 400px;
       margin: 30px auto;
@@ -70,14 +78,14 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       display: none;
     }
-    form input, form textarea {
+    form input, form textarea, #adminForm input {
       width: 100%;
       margin: 10px 0;
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 10px;
     }
-    form button {
+    form button, #adminForm button {
       background-color: #eb5600;
       color: white;
       padding: 10px;
@@ -85,11 +93,18 @@
       border-radius: 10px;
       cursor: pointer;
     }
+    #adminError {
+      color: red;
+      margin-top: 10px;
+      font-size: 14px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
   <header>
     <button id="backButton" onclick="hideForm()">Back</button>
+    <button id="adminButton" onclick="toggleAdminForm()">Admin</button>
     The page name
   </header>
 
@@ -107,7 +122,7 @@
     </div>
   </div>
 
-  <!-- استخدم التوكن بدلاً من الإيميل -->
+  <!-- Order form -->
   <form id="orderForm" action="https://formsubmit.co/c429f789cbf8e4bad80f9c95fb902969" method="POST">
     <input type="hidden" name="Case" id="productType"/>
 
@@ -125,19 +140,64 @@
     <button type="submit">Submit Order</button>
   </form>
 
+  <!-- Admin code form -->
+  <div id="adminForm">
+    <label><strong>Admin code</strong></label>
+    <input type="password" id="adminCodeInput" placeholder="Enter admin code">
+    <button onclick="checkAdminCode()">Submit</button>
+    <div id="adminError"></div>
+  </div>
+
   <script>
     function showForm(productName) {
       document.getElementById('productType').value = productName;
       document.getElementById('orderForm').style.display = 'block';
+      document.getElementById('adminForm').style.display = 'none';
       document.getElementById('backButton').style.display = 'inline-block';
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function hideForm() {
-      const form = document.getElementById('orderForm');
-      form.style.display = 'none';
-      form.reset(); // clear inputs
-      document.getElementById('backButton').style.display = 'none';
+      const orderForm = document.getElementById('orderForm');
+      const adminForm = document.getElementById('adminForm');
+      const backButton = document.getElementById('backButton');
+
+      orderForm.style.display = 'none';
+      orderForm.reset();
+
+      adminForm.style.display = 'none';
+      document.getElementById('adminCodeInput').value = '';
+      document.getElementById('adminError').textContent = '';
+
+      backButton.style.display = 'none';
+    }
+
+    function toggleAdminForm() {
+      const adminForm = document.getElementById('adminForm');
+      const orderForm = document.getElementById('orderForm');
+      const backButton = document.getElementById('backButton');
+
+      orderForm.style.display = 'none';
+
+      if (adminForm.style.display === 'block') {
+        adminForm.style.display = 'none';
+        backButton.style.display = 'none';
+      } else {
+        adminForm.style.display = 'block';
+        backButton.style.display = 'inline-block';
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
+    }
+
+    function checkAdminCode() {
+      const code = document.getElementById('adminCodeInput').value;
+      const errorDiv = document.getElementById('adminError');
+
+      if (code === 'zxy') {
+        window.location.href = 'dashboard.html'; // ← غيّرها للصفحة اللي تحب
+      } else {
+        errorDiv.textContent = 'Invalid code';
+      }
     }
   </script>
 </body>
