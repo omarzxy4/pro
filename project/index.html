@@ -37,15 +37,12 @@
       right: 20px;
       top: 20px;
     }
-
     .products {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 20px;
       padding: 20px;
-      justify-content: center;
     }
-
     .product {
       background: white;
       border-radius: 15px;
@@ -54,19 +51,15 @@
       text-align: center;
       cursor: pointer;
     }
-
     .product img {
-      width: 400px;
-      height: 400px;
+      width: 100%;
+      aspect-ratio: 1 / 1;
       object-fit: cover;
       border-radius: 10px;
-      max-width: 100%;
     }
-
     .product h3 {
       margin: 10px 0;
     }
-
     .product button {
       padding: 10px 15px;
       background-color: #eb5600;
@@ -75,7 +68,6 @@
       border-radius: 10px;
       cursor: pointer;
     }
-
     form, #adminForm, #addProductForm {
       background: white;
       max-width: 400px;
@@ -85,7 +77,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       display: none;
     }
-
     form input, form textarea,
     #adminForm input,
     #addProductForm input {
@@ -95,7 +86,6 @@
       border: 1px solid #ccc;
       border-radius: 10px;
     }
-
     form button, #adminForm button, #addProductForm button {
       background-color: #eb5600;
       color: white;
@@ -104,7 +94,6 @@
       border-radius: 10px;
       cursor: pointer;
     }
-
     #adminError {
       color: red;
       margin-top: 10px;
@@ -117,10 +106,6 @@
         width: 100%;
         height: auto;
         aspect-ratio: 1 / 1;
-      }
-
-      .products {
-        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -138,7 +123,6 @@
       <h3>iPhone 13 Silicon</h3>
       <button onclick="showForm('iPhone 13 Silicon')">Order Now</button>
     </div>
-
     <div class="product">
       <img src="cover.jpg.jpg" alt="iPhone 13 MagSafe"/>
       <h3>iPhone 13 MagSafe</h3>
@@ -146,25 +130,19 @@
     </div>
   </div>
 
-  <!-- Order form -->
   <form id="orderForm" action="https://formsubmit.co/c429f789cbf8e4bad80f9c95fb902969" method="POST">
     <input type="hidden" name="Case" id="productType"/>
-
     <label>Name:</label>
     <input type="text" name="Name" required pattern="[A-Za-zأ-ي\s]+" title="الاسم يجب أن يحتوي على حروف فقط"
            oninput="this.value = this.value.replace(/[^A-Za-zأ-ي\s]/g, '')"/>
-
     <label>Phone Number:</label>
     <input type="tel" name="Phone Number" required pattern="01[0-9]{9}" maxlength="11" title="رقم الهاتف يجب أن يبدأ بـ 01 ويتكون من 11 رقم"
            oninput="this.value = this.value.replace(/[^0-9]/g, '')"/>
-
     <label>Location / Address:</label>
     <textarea name="Address" required></textarea>
-
     <button type="submit">Submit Order</button>
   </form>
 
-  <!-- Admin login form -->
   <div id="adminForm">
     <label><strong>Admin code</strong></label>
     <input type="password" id="adminCodeInput" placeholder="Enter admin code">
@@ -172,14 +150,11 @@
     <div id="adminError"></div>
   </div>
 
-  <!-- Admin Add Product Form -->
   <form id="addProductForm" onsubmit="addProduct(event)">
     <label>Product Name:</label>
     <input type="text" id="newProductName" required>
-
     <label>Product Image:</label>
     <input type="file" id="newProductImage" accept="image/*" required>
-
     <button type="submit">Add Product</button>
     <button type="button" onclick="activateDeleteMode()" style="margin-left: 10px;">Delete Product</button>
   </form>
@@ -212,7 +187,6 @@
       const adminForm = document.getElementById('adminForm');
       document.getElementById('orderForm').style.display = 'none';
       document.getElementById('addProductForm').style.display = 'none';
-
       if (adminForm.style.display === 'block') {
         adminForm.style.display = 'none';
         backButton.style.display = 'none';
@@ -240,7 +214,6 @@
       e.preventDefault();
       const name = document.getElementById('newProductName').value;
       const imageFile = document.getElementById('newProductImage').files[0];
-
       const reader = new FileReader();
       reader.onload = function(event) {
         const product = {
@@ -311,5 +284,3 @@
   </script>
 </body>
 </html>
-
-
