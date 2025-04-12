@@ -4,6 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>The page name</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -52,8 +53,8 @@
       cursor: pointer;
     }
     .product img {
-      width: 100%;
-      aspect-ratio: 1 / 1;
+      width: 400px;
+      height: 400px;
       object-fit: cover;
       border-radius: 10px;
     }
@@ -100,13 +101,18 @@
       font-size: 14px;
       text-align: center;
     }
-
-    @media (max-width: 450px) {
-      .product img {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1 / 1;
-      }
+    #editImageButton {
+      display: none;
+      margin-top: 10px;
+    }
+    #cropContainer {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    #cropImage {
+      max-width: 100%;
+      max-height: 400px;
     }
   </style>
 </head>
@@ -130,6 +136,7 @@
     </div>
   </div>
 
+  <!-- Order form -->
   <form id="orderForm" action="https://formsubmit.co/c429f789cbf8e4bad80f9c95fb902969" method="POST">
     <input type="hidden" name="Case" id="productType"/>
     <label>Name:</label>
@@ -143,6 +150,7 @@
     <button type="submit">Submit Order</button>
   </form>
 
+  <!-- Admin login form -->
   <div id="adminForm">
     <label><strong>Admin code</strong></label>
     <input type="password" id="adminCodeInput" placeholder="Enter admin code">
@@ -150,6 +158,7 @@
     <div id="adminError"></div>
   </div>
 
+  <!-- Admin Add Product Form -->
   <form id="addProductForm" onsubmit="addProduct(event)">
     <label>Product Name:</label>
     <input type="text" id="newProductName" required>
@@ -157,11 +166,24 @@
     <input type="file" id="newProductImage" accept="image/*" required>
     <button type="submit">Add Product</button>
     <button type="button" onclick="activateDeleteMode()" style="margin-left: 10px;">Delete Product</button>
+    <button type="button" id="editImageButton" onclick="openCropper()">Edit Image</button>
   </form>
 
+  <!-- Crop Container -->
+  <div id="cropContainer">
+    <img id="cropImage">
+    <br>
+    <button onclick="zoomImage(0.1)">Zoom In</button>
+    <button onclick="zoomImage(-0.1)">Zoom Out</button>
+    <button onclick="cropImage()">Done</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
     const backButton = document.getElementById('backButton');
     let deleteMode = false;
+    let cropper;
+    let croppedImageData = null;
 
     function showForm(productName) {
       document.getElementById('productType').value = productName;
@@ -176,9 +198,11 @@
       document.getElementById('orderForm').style.display = 'none';
       document.getElementById('adminForm').style.display = 'none';
       document.getElementById('addProductForm').style.display = 'none';
+      document.getElementById('cropContainer').style.display = 'none';
       document.getElementById('orderForm').reset();
       document.getElementById('adminCodeInput').value = '';
       document.getElementById('adminError').textContent = '';
+      document.getElementById('editImageButton').style.display = 'none';
       backButton.style.display = 'none';
       deleteMode = false;
     }
@@ -187,6 +211,8 @@
       const adminForm = document.getElementById('adminForm');
       document.getElementById('orderForm').style.display = 'none';
       document.getElementById('addProductForm').style.display = 'none';
+      document.getElementById('cropContainer').style.display = 'none';
+
       if (adminForm.style.display === 'block') {
         adminForm.style.display = 'none';
         backButton.style.display = 'none';
@@ -210,21 +236,46 @@
       }
     }
 
+    document.getElementById('newProductImage').addEventListener('change', () => {
+      document.getElementById('editImageButton').style.display = 'inline-block';
+    });
+
+    function openCropper() {
+      const imageFile = document.getElementById('newProductImage').files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const cropImage = document.getElementById('cropImage');
+        cropImage.src = e.target.result;
+        document.getElementById('cropContainer').style.display = 'block';
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(cropImage, { aspectRatio: 1 });
+      };
+      reader.readAsDataURL(imageFile);
+    }
+
+    function zoomImage(value) {
+      if (cropper) cropper.zoom(value);
+    }
+
+    function cropImage() {
+      const canvas = cropper.getCroppedCanvas({ width: 400, height: 400 });
+      croppedImageData = canvas.toDataURL();
+      document.getElementById('cropContainer').style.display = 'none';
+    }
+
     function addProduct(e) {
       e.preventDefault();
       const name = document.getElementById('newProductName').value;
-      const imageFile = document.getElementById('newProductImage').files[0];
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const product = {
-          name: name,
-          image: event.target.result
-        };
-        saveProductToLocal(product);
-        renderProduct(product);
+
+      const product = {
+        name: name,
+        image: croppedImageData
       };
-      reader.readAsDataURL(imageFile);
+      saveProductToLocal(product);
+      renderProduct(product);
       document.getElementById('addProductForm').reset();
+      document.getElementById('editImageButton').style.display = 'none';
+      croppedImageData = null;
     }
 
     function renderProduct(product) {
