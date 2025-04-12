@@ -53,7 +53,7 @@
       cursor: pointer;
     }
     .product img {
-      width: 400px;
+      width: 100%;
       height: 400px;
       object-fit: cover;
       border-radius: 10px;
@@ -123,14 +123,16 @@
     The page name
   </header>
 
-  <div class="products" id="productContainer"></div>
+  <div class="products" id="productContainer">
+    <!-- Products will be injected here -->
+  </div>
 
   <form id="orderForm" action="https://formsubmit.co/c429f789cbf8e4bad80f9c95fb902969" method="POST">
     <input type="hidden" name="Case" id="productType"/>
     <label>Name:</label>
-    <input type="text" name="Name" required pattern="[A-Za-zأ-ي\s]+" oninput="this.value = this.value.replace(/[^A-Za-zأ-ي\s]/g, '')"/>
+    <input type="text" name="Name" required/>
     <label>Phone Number:</label>
-    <input type="tel" name="Phone Number" required pattern="01[0-9]{9}" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')"/>
+    <input type="tel" name="Phone Number" required/>
     <label>Location / Address:</label>
     <textarea name="Address" required></textarea>
     <button type="submit">Submit Order</button>
@@ -149,7 +151,7 @@
     <label>Product Image:</label>
     <input type="file" id="newProductImage" accept="image/*" required>
     <button type="submit">Add Product</button>
-    <button type="button" onclick="activateDeleteMode()" style="margin-left: 10px;">Delete Product</button>
+    <button type="button" onclick="activateDeleteMode()">Delete Product</button>
     <button type="button" id="editImageButton" onclick="openCropper()">Edit Image</button>
   </form>
 
@@ -163,96 +165,142 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
-    let deleteMode = false;
     let cropper;
-    let croppedImageData = null;
-    let isAdmin = false;
+    let croppedImageData;
+    let deleteMode = false;
+
+    const productContainer = document.getElementById('productContainer');
+    const orderForm = document.getElementById('orderForm');
+    const backButton = document.getElementById('backButton');
+
+    function showForm(name) {
+      document.getElementById('productType').value = name;
+      orderForm.style.display = 'block';
+      backButton.style.display = 'inline-block';
+      scrollToBottom();
+    }
+
+    function hideForm() {
+      orderForm.style.display = 'none';
+      document.getElementById('adminForm').style.display = 'none';
+      document.getElementById('addProductForm').style.display = 'none';
+      document.getElementById('cropContainer').style.display = 'none';
+      document.getElementById('editImageButton').style.display = 'none';
+      backButton.style.display = 'none';
+      deleteMode = false;
+    }
+
+    function scrollToBottom() {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
 
     function toggleAdminForm() {
       const adminForm = document.getElementById('adminForm');
-      if (adminForm.style.display === 'block') {
-        adminForm.style.display = 'none';
-      } else {
+      const isVisible = adminForm.style.display === 'block';
+      hideForm();
+      if (!isVisible) {
         adminForm.style.display = 'block';
+        backButton.style.display = 'inline-block';
+        scrollToBottom();
       }
     }
 
     function checkAdminCode() {
       const code = document.getElementById('adminCodeInput').value;
       if (code === 'zxy') {
-        isAdmin = true;
-        document.getElementById('adminForm').style.display = 'none';
+        hideForm();
         document.getElementById('addProductForm').style.display = 'block';
+        backButton.style.display = 'inline-block';
       } else {
         document.getElementById('adminError').textContent = 'Invalid code';
       }
     }
 
     document.getElementById('newProductImage').addEventListener('change', () => {
-      if (isAdmin) document.getElementById('editImageButton').style.display = 'inline-block';
+      document.getElementById('editImageButton').style.display = 'inline-block';
     });
 
     function openCropper() {
-      const imageFile = document.getElementById('newProductImage').files[0];
+      const file = document.getElementById('newProductImage').files[0];
       const reader = new FileReader();
       reader.onload = function(e) {
-        const cropImage = document.getElementById('cropImage');
-        cropImage.src = e.target.result;
+        const image = document.getElementById('cropImage');
+        image.src = e.target.result;
         document.getElementById('cropContainer').style.display = 'block';
         if (cropper) cropper.destroy();
-        cropper = new Cropper(cropImage, { aspectRatio: 1 });
+        cropper = new Cropper(image, { aspectRatio: 1 });
       };
-      reader.readAsDataURL(imageFile);
+      reader.readAsDataURL(file);
     }
 
-    function zoomImage(value) {
-      if (cropper) cropper.zoom(value);
+    function zoomImage(val) {
+      if (cropper) cropper.zoom(val);
     }
 
     function cropImage() {
       const canvas = cropper.getCroppedCanvas({ width: 400, height: 400 });
-      croppedImageData = canvas.toDataURL('image/jpeg');
+      croppedImageData = canvas.toDataURL();
       document.getElementById('cropContainer').style.display = 'none';
     }
 
-    async function addProduct(e) {
+    function addProduct(e) {
       e.preventDefault();
       const name = document.getElementById('newProductName').value;
-      const file = document.getElementById('newProductImage').files[0];
-
-      let imageUrl = '';
-      if (croppedImageData) {
-        const data = new FormData();
-        data.append('file', croppedImageData);
-        data.append('upload_preset', 'unsigned'); // <-- Replace with your unsigned preset
-
-        const res = await fetch('https://api.cloudinary.com/v1_1/dr63nqers/image/upload', {
-          method: 'POST',
-          body: data
-        });
-        const cloudData = await res.json();
-        imageUrl = cloudData.secure_url;
+      const image = croppedImageData || '';
+      if (!image) {
+        alert('Please crop the image first.');
+        return;
       }
-
-      const product = {
-        name: name,
-        image: imageUrl
-      };
+      const product = { name, image };
+      saveProduct(product);
       renderProduct(product);
+      e.target.reset();
+      document.getElementById('editImageButton').style.display = 'none';
+      croppedImageData = null;
     }
 
     function renderProduct(product) {
-      const container = document.getElementById('productContainer');
       const div = document.createElement('div');
       div.className = 'product';
       div.innerHTML = `
-        <img src="${product.image}" alt="${product.name}"/>
+        <img src="${product.image}" alt="${product.name}" />
         <h3>${product.name}</h3>
         <button onclick="showForm('${product.name}')">Order Now</button>
       `;
-      container.appendChild(div);
+      productContainer.appendChild(div);
+      if (deleteMode) {
+        div.addEventListener('click', () => deleteProduct(product.name, div));
+      }
     }
+
+    function saveProduct(product) {
+      const products = JSON.parse(localStorage.getItem('products') || '[]');
+      products.push(product);
+      localStorage.setItem('products', JSON.stringify(products));
+    }
+
+    function loadProducts() {
+      const products = JSON.parse(localStorage.getItem('products') || '[]');
+      products.forEach(renderProduct);
+    }
+
+    function deleteProduct(name, div) {
+      if (confirm(`Delete ${name}?`)) {
+        div.remove();
+        let products = JSON.parse(localStorage.getItem('products') || '[]');
+        products = products.filter(p => p.name !== name);
+        localStorage.setItem('products', JSON.stringify(products));
+      }
+    }
+
+    function activateDeleteMode() {
+      deleteMode = true;
+      alert('Click any product to delete it.');
+    }
+
+    window.onload = loadProducts;
   </script>
 </body>
 </html>
+
 
