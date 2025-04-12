@@ -171,6 +171,7 @@
 
     const cloudName = 'dr63nqers';
     const uploadPreset = 'unsigned_preset';
+    const jsonPublicId = 'products';
 
     function showForm(productName) {
       document.getElementById('productType').value = productName;
@@ -264,79 +265,81 @@
       return data.secure_url;
     }
 
+    async function updateProductsJsonFile(products) {
+      const blob = new Blob([JSON.stringify(products)], { type: 'application/json' });
+      const formData = new FormData();
+      formData.append('file', blob);
+      formData.append('public_id', jsonPublicId);
+      formData.append('upload_preset', uploadPreset);
+      formData.append('cloud_name', cloudName);
+
+      await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
+        method: 'POST',
+        body: formData
+      });
+    }
+
     async function addProduct(e) {
       e.preventDefault();
       const name = document.getElementById('newProductName').value;
       if (!croppedImageData) return alert("Please crop the image first.");
 
       const imageUrl = await uploadToCloudinary(croppedImageData);
-
-      const product = {
-        name: name,
-        image: imageUrl
-      };
-      saveProductToLocal(product);
-      renderProduct(product);
+      const product = { name, image: imageUrl };
+      let products = await getProducts();
+      products.push(product);
+      await updateProductsJsonFile(products);
+      renderProducts(products);
       document.getElementById('addProductForm').reset();
       document.getElementById('editImageButton').style.display = 'none';
       croppedImageData = null;
     }
 
-    function renderProduct(product) {
+    async function getProducts() {
+      try {
+        const res = await fetch(`https://res.cloudinary.com/${cloudName}/raw/upload/${jsonPublicId}.json`);
+        return await res.json();
+      } catch {
+        return [];
+      }
+    }
+
+    function renderProducts(products) {
       const container = document.getElementById('productContainer');
-      const div = document.createElement('div');
-      div.className = 'product';
-      div.innerHTML = `
-        <img src="${product.image}" alt="${product.name}"/>
-        <h3>${product.name}</h3>
-        <button onclick="showForm('${product.name}')">Order Now</button>
-      `;
-      container.appendChild(div);
-      attachDeleteListener(div, product.name);
+      container.innerHTML = '';
+      products.forEach(product => {
+        const div = document.createElement('div');
+        div.className = 'product';
+        div.innerHTML = `
+          <img src="${product.image}" alt="${product.name}"/>
+          <h3>${product.name}</h3>
+          <button onclick="showForm('${product.name}')">Order Now</button>
+        `;
+        container.appendChild(div);
+        attachDeleteListener(div, product.name);
+      });
     }
 
-    function saveProductToLocal(product) {
-      let products = JSON.parse(localStorage.getItem('addedProducts')) || [];
-      products.push(product);
-      localStorage.setItem('addedProducts', JSON.stringify(products));
-    }
-
-    function loadSavedProducts() {
-      const products = JSON.parse(localStorage.getItem('addedProducts')) || [];
-      products.forEach(product => renderProduct(product));
-    }
-
-    function activateDeleteMode() {
+    async function activateDeleteMode() {
       deleteMode = true;
       alert("Click any product to delete it.\nPress 'Back' to exit delete mode.");
     }
 
     function attachDeleteListener(productDiv, productName) {
-      productDiv.addEventListener('click', function () {
-        if (deleteMode) {
-          if (confirm(`Delete "${productName}"?`)) {
-            productDiv.remove();
-            let products = JSON.parse(localStorage.getItem('addedProducts')) || [];
-            products = products.filter(p => p.name !== productName);
-            localStorage.setItem('addedProducts', JSON.stringify(products));
-          }
+      productDiv.addEventListener('click', async function () {
+        if (deleteMode && confirm(`Delete "${productName}"?`)) {
+          let products = await getProducts();
+          products = products.filter(p => p.name !== productName);
+          await updateProductsJsonFile(products);
+          renderProducts(products);
         }
       });
     }
 
-    function enableDeleteOnAll() {
-      const productDivs = document.querySelectorAll('.product');
-      productDivs.forEach(div => {
-        const name = div.querySelector('h3')?.innerText || '';
-        attachDeleteListener(div, name);
-      });
-    }
-
-    window.onload = function() {
-      loadSavedProducts();
-      enableDeleteOnAll();
+    window.onload = async function() {
+      const products = await getProducts();
+      renderProducts(products);
     };
   </script>
 </body>
 </html>
-
