@@ -221,7 +221,7 @@
 
     async function getProducts() {
       try {
-        const res = await fetch(`https://res.cloudinary.com/${cloudName}/raw/upload/${jsonPublicId}.json`);
+        const res = await fetch(`https://res.cloudinary.com/${cloudName}/raw/upload/products.json`);
         return await res.json();
       } catch {
         return [];
@@ -267,4 +267,3 @@
   </script>
 </body>
 </html>
-
