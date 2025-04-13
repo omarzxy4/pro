@@ -4,7 +4,6 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>The page name</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -101,19 +100,6 @@
       font-size: 14px;
       text-align: center;
     }
-    #editImageButton {
-      display: none;
-      margin-top: 10px;
-    }
-    #cropContainer {
-      display: none;
-      text-align: center;
-      margin-top: 20px;
-    }
-    #cropImage {
-      max-width: 100%;
-      max-height: 400px;
-    }
   </style>
 </head>
 <body>
@@ -146,27 +132,13 @@
   <form id="addProductForm" onsubmit="addProduct(event)">
     <label>Product Name:</label>
     <input type="text" id="newProductName" required>
-    <label>Product Image:</label>
-    <input type="file" id="newProductImage" accept="image/*" required>
     <button type="submit">Add Product</button>
     <button type="button" onclick="activateDeleteMode()" style="margin-left: 10px;">Delete Product</button>
-    <button type="button" id="editImageButton" onclick="openCropper()">Edit Image</button>
   </form>
 
-  <div id="cropContainer">
-    <img id="cropImage">
-    <br>
-    <button onclick="zoomImage(0.1)">Zoom In</button>
-    <button onclick="zoomImage(-0.1)">Zoom Out</button>
-    <button onclick="cropImage()">Done</button>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
     const backButton = document.getElementById('backButton');
     let deleteMode = false;
-    let cropper;
-    let croppedImageData = null;
     let isAdmin = false;
 
     const cloudName = 'dr63nqers';
@@ -186,11 +158,9 @@
       document.getElementById('orderForm').style.display = 'none';
       document.getElementById('adminForm').style.display = 'none';
       document.getElementById('addProductForm').style.display = 'none';
-      document.getElementById('cropContainer').style.display = 'none';
       document.getElementById('orderForm').reset();
       document.getElementById('adminCodeInput').value = '';
       document.getElementById('adminError').textContent = '';
-      document.getElementById('editImageButton').style.display = 'none';
       backButton.style.display = 'none';
       deleteMode = false;
     }
@@ -199,7 +169,6 @@
       const adminForm = document.getElementById('adminForm');
       document.getElementById('orderForm').style.display = 'none';
       document.getElementById('addProductForm').style.display = 'none';
-      document.getElementById('cropContainer').style.display = 'none';
 
       if (adminForm.style.display === 'block') {
         adminForm.style.display = 'none';
@@ -225,46 +194,6 @@
       }
     }
 
-    document.getElementById('newProductImage').addEventListener('change', () => {
-      if (isAdmin) document.getElementById('editImageButton').style.display = 'inline-block';
-    });
-
-    function openCropper() {
-      const imageFile = document.getElementById('newProductImage').files[0];
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const cropImage = document.getElementById('cropImage');
-        cropImage.src = e.target.result;
-        document.getElementById('cropContainer').style.display = 'block';
-        if (cropper) cropper.destroy();
-        cropper = new Cropper(cropImage, { aspectRatio: 1 });
-      };
-      reader.readAsDataURL(imageFile);
-    }
-
-    function zoomImage(value) {
-      if (cropper) cropper.zoom(value);
-    }
-
-    function cropImage() {
-      const canvas = cropper.getCroppedCanvas({ width: 400, height: 400 });
-      croppedImageData = canvas.toDataURL();
-      document.getElementById('cropContainer').style.display = 'none';
-    }
-
-    async function uploadToCloudinary(base64Image) {
-      const formData = new FormData();
-      formData.append('file', base64Image);
-      formData.append('upload_preset', uploadPreset);
-
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData
-      });
-      const data = await response.json();
-      return data.secure_url;
-    }
-
     async function updateProductsJsonFile(products) {
       const blob = new Blob([JSON.stringify(products)], { type: 'application/json' });
       const formData = new FormData();
@@ -282,17 +211,12 @@
     async function addProduct(e) {
       e.preventDefault();
       const name = document.getElementById('newProductName').value;
-      if (!croppedImageData) return alert("Please crop the image first.");
-
-      const imageUrl = await uploadToCloudinary(croppedImageData);
-      const product = { name, image: imageUrl };
+      const product = { name, image: '' };
       let products = await getProducts();
       products.push(product);
       await updateProductsJsonFile(products);
       renderProducts(products);
       document.getElementById('addProductForm').reset();
-      document.getElementById('editImageButton').style.display = 'none';
-      croppedImageData = null;
     }
 
     async function getProducts() {
@@ -311,7 +235,7 @@
         const div = document.createElement('div');
         div.className = 'product';
         div.innerHTML = `
-          <img src="${product.image}" alt="${product.name}"/>
+          ${product.image ? `<img src="${product.image}" alt="${product.name}"/>` : ''}
           <h3>${product.name}</h3>
           <button onclick="showForm('${product.name}')">Order Now</button>
         `;
@@ -343,3 +267,4 @@
   </script>
 </body>
 </html>
+
