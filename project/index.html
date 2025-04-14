@@ -136,134 +136,139 @@
     <button type="button" onclick="activateDeleteMode()" style="margin-left: 10px;">Delete Product</button>
   </form>
 
-  <script>
-    const backButton = document.getElementById('backButton');
-    let deleteMode = false;
-    let isAdmin = false;
+  <!-- نفس الكود تمامًا اللي انت بعته، مع فقط تعديل updateProductsJsonFile و getProducts -->
 
-    const cloudName = 'dr63nqers';
-    const uploadPreset = 'projectzxy';
-    const jsonPublicId = 'products';
+<!-- ابدأ من عند <script> -->
+<script>
+  const backButton = document.getElementById('backButton');
+  let deleteMode = false;
+  let isAdmin = false;
 
-    function showForm(productName) {
-      document.getElementById('productType').value = productName;
-      document.getElementById('orderForm').style.display = 'block';
-      document.getElementById('adminForm').style.display = 'none';
-      document.getElementById('addProductForm').style.display = 'none';
+  const cloudName = 'dr63nqers';
+  const uploadPreset = 'projectzxy';
+  const jsonPublicId = 'products';
+
+  function showForm(productName) {
+    document.getElementById('productType').value = productName;
+    document.getElementById('orderForm').style.display = 'block';
+    document.getElementById('adminForm').style.display = 'none';
+    document.getElementById('addProductForm').style.display = 'none';
+    backButton.style.display = 'inline-block';
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+
+  function hideForm() {
+    document.getElementById('orderForm').style.display = 'none';
+    document.getElementById('adminForm').style.display = 'none';
+    document.getElementById('addProductForm').style.display = 'none';
+    document.getElementById('orderForm').reset();
+    document.getElementById('adminCodeInput').value = '';
+    document.getElementById('adminError').textContent = '';
+    backButton.style.display = 'none';
+    deleteMode = false;
+  }
+
+  function toggleAdminForm() {
+    const adminForm = document.getElementById('adminForm');
+    document.getElementById('orderForm').style.display = 'none';
+    document.getElementById('addProductForm').style.display = 'none';
+
+    if (adminForm.style.display === 'block') {
+      adminForm.style.display = 'none';
+      backButton.style.display = 'none';
+    } else {
+      adminForm.style.display = 'block';
       backButton.style.display = 'inline-block';
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
+  }
 
-    function hideForm() {
-      document.getElementById('orderForm').style.display = 'none';
+  function checkAdminCode() {
+    const code = document.getElementById('adminCodeInput').value;
+    const errorDiv = document.getElementById('adminError');
+    if (code === 'zxy') {
+      isAdmin = true;
       document.getElementById('adminForm').style.display = 'none';
-      document.getElementById('addProductForm').style.display = 'none';
-      document.getElementById('orderForm').reset();
+      document.getElementById('addProductForm').style.display = 'block';
+      errorDiv.textContent = '';
       document.getElementById('adminCodeInput').value = '';
-      document.getElementById('adminError').textContent = '';
-      backButton.style.display = 'none';
-      deleteMode = false;
+    } else {
+      errorDiv.textContent = 'Invalid code';
     }
+  }
 
-    function toggleAdminForm() {
-      const adminForm = document.getElementById('adminForm');
-      document.getElementById('orderForm').style.display = 'none';
-      document.getElementById('addProductForm').style.display = 'none';
+  // ✅ تم التعديل هنا
+  async function updateProductsJsonFile(products) {
+    const blob = new Blob([JSON.stringify(products)], { type: 'application/json' });
+    const formData = new FormData();
+    formData.append('file', blob);
+    formData.append('public_id', jsonPublicId);
+    formData.append('upload_preset', uploadPreset);
 
-      if (adminForm.style.display === 'block') {
-        adminForm.style.display = 'none';
-        backButton.style.display = 'none';
-      } else {
-        adminForm.style.display = 'block';
-        backButton.style.display = 'inline-block';
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
+      method: 'POST',
+      body: formData
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1000)); // للتأكد من انتهاء التحديث قبل العرض
+  }
+
+  async function addProduct(e) {
+    e.preventDefault();
+    const name = document.getElementById('newProductName').value;
+    const product = { name, image: '' };
+    let products = await getProducts();
+    products.push(product);
+    await updateProductsJsonFile(products);
+    renderProducts(products);
+    document.getElementById('addProductForm').reset();
+  }
+
+  // ✅ تم التعديل هنا
+  async function getProducts() {
+    try {
+      const res = await fetch(`https://res.cloudinary.com/${cloudName}/raw/upload/products.json?cb=${Date.now()}`);
+      return await res.json();
+    } catch {
+      return [];
+    }
+  }
+
+  function renderProducts(products) {
+    const container = document.getElementById('productContainer');
+    container.innerHTML = '';
+    products.forEach(product => {
+      const div = document.createElement('div');
+      div.className = 'product';
+      div.innerHTML = `
+        ${product.image ? `<img src="${product.image}" alt="${product.name}"/>` : ''}
+        <h3>${product.name}</h3>
+        <button onclick="showForm('${product.name}')">Order Now</button>
+      `;
+      container.appendChild(div);
+      attachDeleteListener(div, product.name);
+    });
+  }
+
+  async function activateDeleteMode() {
+    deleteMode = true;
+    alert("Click any product to delete it.\nPress 'Back' to exit delete mode.");
+  }
+
+  function attachDeleteListener(productDiv, productName) {
+    productDiv.addEventListener('click', async function () {
+      if (deleteMode && confirm(`Delete "${productName}"?`)) {
+        let products = await getProducts();
+        products = products.filter(p => p.name !== productName);
+        await updateProductsJsonFile(products);
+        renderProducts(products);
       }
-    }
+    });
+  }
 
-    function checkAdminCode() {
-      const code = document.getElementById('adminCodeInput').value;
-      const errorDiv = document.getElementById('adminError');
-      if (code === 'zxy') {
-        isAdmin = true;
-        document.getElementById('adminForm').style.display = 'none';
-        document.getElementById('addProductForm').style.display = 'block';
-        errorDiv.textContent = '';
-        document.getElementById('adminCodeInput').value = '';
-      } else {
-        errorDiv.textContent = 'Invalid code';
-      }
-    }
+  window.onload = async function() {
+    const products = await getProducts();
+    renderProducts(products);
+  };
+</script>
 
-    async function updateProductsJsonFile(products) {
-      const blob = new Blob([JSON.stringify(products)], { type: 'application/json' });
-      const formData = new FormData();
-      formData.append('file', blob);
-      formData.append('public_id', jsonPublicId);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('cloud_name', cloudName);
-
-      await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
-        method: 'POST',
-        body: formData
-      });
-    }
-
-    async function addProduct(e) {
-      e.preventDefault();
-      const name = document.getElementById('newProductName').value;
-      const product = { name, image: '' };
-      let products = await getProducts();
-      products.push(product);
-      await updateProductsJsonFile(products);
-      renderProducts(products);
-      document.getElementById('addProductForm').reset();
-    }
-
-    async function getProducts() {
-      try {
-        const res = await fetch(`https://res.cloudinary.com/${cloudName}/raw/upload/products.json`);
-        return await res.json();
-      } catch {
-        return [];
-      }
-    }
-
-    function renderProducts(products) {
-      const container = document.getElementById('productContainer');
-      container.innerHTML = '';
-      products.forEach(product => {
-        const div = document.createElement('div');
-        div.className = 'product';
-        div.innerHTML = `
-          ${product.image ? `<img src="${product.image}" alt="${product.name}"/>` : ''}
-          <h3>${product.name}</h3>
-          <button onclick="showForm('${product.name}')">Order Now</button>
-        `;
-        container.appendChild(div);
-        attachDeleteListener(div, product.name);
-      });
-    }
-
-    async function activateDeleteMode() {
-      deleteMode = true;
-      alert("Click any product to delete it.\nPress 'Back' to exit delete mode.");
-    }
-
-    function attachDeleteListener(productDiv, productName) {
-      productDiv.addEventListener('click', async function () {
-        if (deleteMode && confirm(`Delete "${productName}"?`)) {
-          let products = await getProducts();
-          products = products.filter(p => p.name !== productName);
-          await updateProductsJsonFile(products);
-          renderProducts(products);
-        }
-      });
-    }
-
-    window.onload = async function() {
-      const products = await getProducts();
-      renderProducts(products);
-    };
-  </script>
-</body>
-</html>
