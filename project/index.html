@@ -136,9 +136,6 @@
     <button type="button" onclick="activateDeleteMode()" style="margin-left: 10px;">Delete Product</button>
   </form>
 
-  <!-- نفس الكود تمامًا اللي انت بعته، مع فقط تعديل updateProductsJsonFile و getProducts -->
-
-<!-- ابدأ من عند <script> -->
 <script>
   const backButton = document.getElementById('backButton');
   let deleteMode = false;
@@ -197,20 +194,19 @@
     }
   }
 
-  // ✅ تم التعديل هنا
   async function updateProductsJsonFile(products) {
     const blob = new Blob([JSON.stringify(products)], { type: 'application/json' });
     const formData = new FormData();
     formData.append('file', blob);
     formData.append('public_id', jsonPublicId);
     formData.append('upload_preset', uploadPreset);
+    formData.append('cloud_name', cloudName);
+    formData.append('invalidate', 'true'); // التعديل هنا
 
     await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
       method: 'POST',
       body: formData
     });
-
-    await new Promise(resolve => setTimeout(resolve, 1000)); // للتأكد من انتهاء التحديث قبل العرض
   }
 
   async function addProduct(e) {
@@ -224,10 +220,9 @@
     document.getElementById('addProductForm').reset();
   }
 
-  // ✅ تم التعديل هنا
   async function getProducts() {
     try {
-      const res = await fetch(`https://res.cloudinary.com/${cloudName}/raw/upload/products.json?cb=${Date.now()}`);
+      const res = await fetch(`https://res.cloudinary.com/${cloudName}/raw/upload/products.json`);
       return await res.json();
     } catch {
       return [];
@@ -271,4 +266,3 @@
     renderProducts(products);
   };
 </script>
-
